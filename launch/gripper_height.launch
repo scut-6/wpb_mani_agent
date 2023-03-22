@@ -1,0 +1,10 @@
+<launch>
+
+  <include file="$(find wpb_mani_bringup)/launch/mani_dummy.launch" />
+
+  <!-- wpb_mani_gripper_height  -->
+  <node pkg="wpb_mani_agent" type="wpb_mani_gripper_height" name="wpb_mani_gripper_height" output="screen"/>
+
+  <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure"/>
+
+</launch>

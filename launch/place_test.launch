@@ -1,0 +1,82 @@
+<launch>
+
+  <!-- Run wpb_mani core -->
+  <node pkg="wpb_mani_bringup" type="wpb_mani_core" name="wpb_mani_core" output="screen">
+    <param name="serial_port" type="string" value="/dev/ftdi"/> 
+    <rosparam file="$(find wpb_mani_bringup)/config/wpb_mani.yaml" command="load" />
+  </node>
+
+  <!--- Run Rplidar -->
+  <node name="rplidarNode"          pkg="rplidar_ros"  type="rplidarNode" output="screen">
+    <param name="serial_port"         type="string" value="/dev/rplidar"/>  
+    <param name="serial_baudrate"     type="int"    value="115200"/>
+    <param name="frame_id"            type="string" value="laser"/>
+    <param name="inverted"            type="bool"   value="false"/>
+    <param name="angle_compensate"    type="bool"   value="true"/>
+    <remap from="scan" to="scan_raw"/>
+  </node>
+    
+  <!-- Run lidar filter -->
+  <node pkg="wpb_mani_bringup" type="wpb_mani_lidar_filter" name="wpb_mani_lidar_filter">
+    <param name="pub_topic" value="/scan"/>
+  </node>
+
+  <!-- Run the map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find wpb_mani_tutorials)/maps/map.yaml"/>
+
+  <!--- Run AMCL -->
+  <include file="$(find wpb_mani_tutorials)/nav_lidar/amcl_omni.launch" />
+
+  <!--- Run move base -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base"  output="screen">
+    <rosparam file="$(find wpb_mani_tutorials)/nav_lidar/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find wpb_mani_tutorials)/nav_lidar/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find wpb_mani_tutorials)/nav_lidar/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find wpb_mani_tutorials)/nav_lidar/global_costmap_params.yaml" command="load" />
+    <param name="base_global_planner" value="global_planner/GlobalPlanner" /> 
+    <param name="use_dijkstra" value="true"/>
+    <param name="base_local_planner" value="wpb_local_planner/WpbLocalPlanner" />
+    <param name= "controller_frequency" value="10" type="double"/>
+  </node>
+
+  <!-- wpb_mani_agent -->
+  <node pkg="wpb_mani_agent" type="wpb_mani_agent_node" name="wpb_mani_agent_node" output="screen">
+    <rosparam file="$(find wpb_mani_agent)/config/agent.yaml" command="load" />
+  </node>
+
+  <!-- Map tools  -->
+  <!-- <node pkg="waterplus_map_tools" type="wp_manager" name="wp_manager" output="screen">
+  </node> -->
+
+  <!-- wpb_mani_navi_server -->
+  <!-- <node pkg="wpb_mani_agent" type="wpb_mani_navi_server" name="wpb_mani_navi_server" output="screen"/> -->
+
+  <!-- path_follower  -->
+  <!-- <node pkg="wpb_mani_agent" type="wpb_mani_path_follower" name="wpb_mani_path_follower" output="screen"/> -->
+
+  <!-- behaviors -->
+  <node pkg="wpb_mani_agent" type="wpb_mani_track_box" name="wpb_mani_track_box"/>
+  <node pkg="wpb_mani_agent" type="wpb_mani_place_rack" name="wpb_mani_place_rack" output="screen" >
+    <param name="grab/target_y_k" value="0.5"/>
+  </node>
+  <!-- <node pkg="wpb_mani_behaviors" type="wpb_mani_place_action" name="wpb_mani_place_action"/> -->
+
+    <!--- Azure Kinect -->
+    <include file="$(find wpb_mani_bringup)/launch/azure_kinect_720p_wfov.launch" />
+
+  <!-- rack_detect_node -->
+  <node name="rack_detect_node" pkg="wpr_rack_pkg" type="rack_detect_node" >
+    <param name="topic" value="points2"/>
+  </node>
+  
+  <!-- RViz and TF tree -->
+  <arg name="model" default="$(find wpb_mani_description)/urdf/wpb_mani.urdf.xacro"/>
+  <param name="robot_description" command="$(find xacro)/xacro.py $(arg model)" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+  <arg name="rvizconfig" default="$(find wpr_rack_pkg)/rviz/wpb_mani.rviz" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+
+  <!-- Run wpb_mani_pallet_grab -->
+  <node pkg="wpb_mani_agent" type="wpb_mani_pallet_place" name="wpb_mani_pallet_place"/>
+
+</launch>

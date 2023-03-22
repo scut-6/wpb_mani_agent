@@ -1,0 +1,8 @@
+<launch>
+
+  <!-- wpb_mani_agent -->
+  <node pkg="wpb_mani_agent" type="wpb_mani_agent_node" name="wpb_mani_agent_node" output="screen">
+    <rosparam file="$(find wpb_mani_agent)/config/agent.yaml" command="load" />
+  </node>
+
+</launch>
